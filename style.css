@@ -352,3 +352,16 @@ body {
 #siteFooter { background: var(--theme-pale); text-align: center; padding: 28px 16px 34px; font-size: 0.85rem; color: var(--text-muted); margin-top: 24px; }
 #siteFooter a { color: var(--theme-dark); font-weight: 700; }
 #siteFooter p { margin-top: 8px; }
+
+/* CPカラー */
+.cp-save-row { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
+.cp-save-row input { flex: 1; min-width: 0; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.85rem; background: var(--bg1); outline: none; }
+.cp-save-row input:focus { border-color: var(--theme); }
+.cp-save-row .btn { flex: 0 0 auto; padding: 7px 12px; font-size: 0.78rem; }
+.cp-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; max-height: 150px; overflow-y: auto; }
+.cp-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; }
+.cp-swatch { width: 64px; height: 24px; border-radius: 12px; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s; }
+.cp-swatch:hover { transform: scale(1.06); border-color: var(--theme-dark); }
+.cp-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-item button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
+.cp-item button:hover { color: #c44; }

@@ -88,6 +88,12 @@
       </div>
       <div class="color-history-label">履歴（クリックで適用）</div>
       <div class="color-history-row" id="colorHistoryRow"></div>
+      <div class="color-history-label" style="margin-top:12px">CPカラー（グラデーションを名前つきで保存）</div>
+      <div class="cp-save-row">
+        <input type="text" id="cpName" placeholder="名前（例：A×B）" />
+        <button class="btn btn-ghost" type="button" onclick="saveCpColor()">💾 今の色を保存</button>
+      </div>
+      <div class="cp-list" id="cpColorRow"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="saveEvent()">保存</button>

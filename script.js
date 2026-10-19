@@ -37,8 +37,61 @@ var calColors = JSON.parse(localStorage.getItem('taku_cal_colors') || 'null') ||
   cardBg:  '#ffffff',
   cardAlpha: 82
 };
-// カラーヒストリー（最大5件）: [{mode, c1, c2}]
+// カラーヒストリー（最大10件）: [{mode, c1, c2}]
 var colorHistory = JSON.parse(localStorage.getItem('taku_cal_colorhist') || '[]');
+
+// CPカラー（グラデーションの保存）: [{id, name, c1, c2}]
+var cpColors = [];
+try { cpColors = JSON.parse(localStorage.getItem('taku_cal_cpcolors') || '[]'); } catch(e) {}
+function saveCpColors() { try { localStorage.setItem('taku_cal_cpcolors', JSON.stringify(cpColors)); } catch(e) {} }
+
+function saveCpColor() {
+  if(colorMode !== 'gradient') { showToast('「2色グラデーション」を選んでから保存してください'); return; }
+  var c1 = document.getElementById('evColor1').value;
+  var c2 = document.getElementById('evColor2').value;
+  var nameEl = document.getElementById('cpName');
+  var name = nameEl.value.trim() || 'CPカラー' + (cpColors.length + 1);
+  cpColors.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, c1: c1, c2: c2 });
+  saveCpColors();
+  nameEl.value = '';
+  renderCpColors();
+  showToast('CPカラーを保存しました');
+}
+function renderCpColors() {
+  var row = document.getElementById('cpColorRow');
+  if(!row) return;
+  row.innerHTML = '';
+  if(cpColors.length === 0) {
+    row.innerHTML = '<span style="font-size:0.7rem;color:var(--text-muted)">まだ保存されていません</span>';
+    return;
+  }
+  cpColors.forEach(function(cp){
+    var item = document.createElement('div');
+    item.className = 'cp-item';
+    var sw = document.createElement('div');
+    sw.className = 'cp-swatch';
+    sw.style.background = 'linear-gradient(90deg,' + cp.c1 + ',' + cp.c2 + ')';
+    sw.title = cp.c1 + ' → ' + cp.c2;
+    sw.addEventListener('click', function(){
+      setColorMode('gradient');
+      document.getElementById('evColor1').value = cp.c1;
+      document.getElementById('evColor2').value = cp.c2;
+      updateColorPreview();
+    });
+    var nm = document.createElement('span');
+    nm.textContent = cp.name;
+    var del = document.createElement('button');
+    del.textContent = '×';
+    del.title = '削除';
+    del.addEventListener('click', function(){
+      cpColors = cpColors.filter(function(x){ return x.id !== cp.id; });
+      saveCpColors();
+      renderCpColors();
+    });
+    item.appendChild(sw); item.appendChild(nm); item.appendChild(del);
+    row.appendChild(item);
+  });
+}
 
 function saveColorHistory() { localStorage.setItem('taku_cal_colorhist', JSON.stringify(colorHistory)); }
 
@@ -48,7 +101,7 @@ function pushColorHistory(mode, c1, c2) {
     return !(h.mode===mode && h.c1===c1 && h.c2===c2);
   });
   colorHistory.unshift({mode:mode, c1:c1, c2:c2});
-  if(colorHistory.length > 5) colorHistory = colorHistory.slice(0,5);
+  if(colorHistory.length > 10) colorHistory = colorHistory.slice(0,10);
   saveColorHistory();
 }
 
@@ -614,13 +667,13 @@ function renderMonthFull(m) {
       // バードラッグ開始（PC）
       bar.addEventListener('mousedown', function(e){
         e.stopPropagation();
-        startMoveEvent(ev.id, ds, bar);
+        startMoveEvent(ev.id, bar.closest('.cal-day').dataset.date, bar);
       });
       // バータッチ開始（スマホ）
       bar.addEventListener('touchstart', function(e){
         e.stopPropagation();
         e.preventDefault();
-        startMoveEvent(ev.id, ds, bar);
+        startMoveEvent(ev.id, bar.closest('.cal-day').dataset.date, bar);
       }, {passive:false});
       cell.appendChild(bar);
     });
@@ -816,6 +869,7 @@ function openNewEvent(start, end) {
   setColorMode('solid');
   updateColorPreview();
   renderColorHistory();
+  renderCpColors();
   document.getElementById('eventModal').classList.add('open');
   setTimeout(function(){ document.getElementById('evTitle').focus(); }, 100);
 }
@@ -834,6 +888,7 @@ function openEditEvent(id) {
   setColorMode(ev.colorMode || 'solid');
   updateColorPreview();
   renderColorHistory();
+  renderCpColors();
   document.getElementById('eventModal').classList.add('open');
 }
 function closeEventModal() { document.getElementById('eventModal').classList.remove('open'); }
@@ -910,6 +965,7 @@ function exportEvents() {
   var data = {
     title:  localStorage.getItem('taku_cal_title') || DEFAULT_TITLE,
     events: events,
+    cpColors: cpColors,
     exportedAt: new Date().toISOString()
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
@@ -938,6 +994,7 @@ function importEvents(e) {
         showToast('形式が正しくありません');
         return;
       }
+      if(Array.isArray(data.cpColors)) { cpColors = data.cpColors; saveCpColors(); }
       if(data.title) {
         localStorage.setItem('taku_cal_title', data.title);
       }

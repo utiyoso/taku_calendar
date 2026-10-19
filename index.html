@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>卓カレンダー</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="topbar">
+  <input id="titleInput" type="text" placeholder="タイトルを入力..." />
+  <label class="width-ctl" title="カレンダーの横幅（スクショの幅にも反映されます）">
+    <span>↔ 横幅</span>
+    <input type="range" id="widthSlider" min="480" max="1600" step="20" value="1200" oninput="setCalWidth(this.value)" />
+    <span id="widthVal">1200px</span>
+  </label>
+  <button class="topbar-btn" onclick="showBgModal()">🎨 背景</button>
+  <button class="topbar-btn" onclick="exportEvents()">📤 エクスポート</button>
+  <button class="topbar-btn" onclick="document.getElementById('importFile').click()">📥 インポート</button>
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importEvents(event)" />
+  <button class="topbar-btn primary" onclick="takeScreenshot()">📷 スクショ</button>
+</div>
+
+<div id="yearView">
+  <div id="bgPreview">
+    <div id="yearTitle"></div>
+    <div id="yearNav">
+      <button class="year-nav-btn" data-html2canvas-ignore="true" onclick="changeYear(-1)" aria-label="前の年">←</button>
+      <span id="yearLabel"></span>
+      <button class="year-nav-btn" data-html2canvas-ignore="true" onclick="changeYear(1)" aria-label="次の年">→</button>
+    </div>
+    <div class="year-grid" id="yearGrid"></div>
+  </div>
+</div>
+
+<div id="monthView">
+  <div id="bgMonthPreview" style="min-height:calc(100vh - 57px); padding: 20px 24px;">
+    <div id="monthViewHeader">
+      <button class="topbar-btn" onclick="backToYear()">← 年間表示</button>
+      <div id="monthViewTitle"></div>
+      <button class="topbar-btn" onclick="takeMonthScreenshot()">📷 この月をスクショ</button>
+      <button class="topbar-btn" onclick="showFreeDaysModal()">📋 空き日程を出力</button>
+    </div>
+    <div class="month-full-cal" id="monthFullCal"></div>
+  </div>
+</div>
+
+<!-- EVENT MODAL -->
+<div class="modal-overlay" id="eventModal">
+  <div class="modal">
+    <h2 id="eventModalTitle">予定を追加</h2>
+    <div class="form-group">
+      <label>タイトル</label>
+      <input type="text" id="evTitle" placeholder="例：旅行、仕事、イベント..." />
+    </div>
+    <div class="form-group">
+      <label>メモ</label>
+      <textarea id="evMemo" placeholder="詳細メモ..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>開始日</label>
+      <input type="date" id="evStart" />
+    </div>
+    <div class="form-group">
+      <label>終了日</label>
+      <input type="date" id="evEnd" />
+    </div>
+    <div class="form-group">
+      <label>カラー</label>
+      <div class="color-mode-tabs">
+        <button class="color-tab active" id="tabSolid" onclick="setColorMode('solid')">単色</button>
+        <button class="color-tab" id="tabGrad" onclick="setColorMode('gradient')">2色グラデーション</button>
+      </div>
+      <div class="color-pickers">
+        <div class="color-swatch-wrap" id="color1Wrap">
+          <input type="color" id="evColor1" value="#f08aa8" oninput="updateColorPreview()" />
+          <label>カラー1</label>
+        </div>
+        <div class="color-swatch-wrap" id="color2Wrap" style="display:none">
+          <input type="color" id="evColor2" value="#d9547e" oninput="updateColorPreview()" />
+          <label>カラー2</label>
+        </div>
+        <div class="gradient-preview" id="colorPreview"></div>
+      </div>
+      <div class="color-history-label">履歴（クリックで適用）</div>
+      <div class="color-history-row" id="colorHistoryRow"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveEvent()">保存</button>
+      <button class="btn btn-ghost" onclick="closeEventModal()">キャンセル</button>
+      <button class="btn btn-danger" id="deleteEvBtn" onclick="deleteEvent()" style="display:none">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- BG MODAL -->
+<div class="modal-overlay" id="bgModal">
+  <div class="modal">
+    <h2>背景・カラー設定</h2>
+    <div class="form-group">
+      <label>背景のタイプ</label>
+      <div class="color-mode-tabs">
+        <button class="color-tab active" id="bgTabGradient" onclick="setBgMode('gradient')">グラデーション</button>
+        <button class="color-tab" id="bgTabPattern" onclick="setBgMode('pattern')">パターン</button>
+        <button class="color-tab" id="bgTabImage" onclick="setBgMode('image')">画像</button>
+      </div>
+
+      <div id="bgPaneGradient">
+        <div class="color-row" id="bgColorRow">
+          <div class="bg-stop"><input type="color" class="bgc" value="#fff5f8" oninput="updateBgPreview()" /><span>①</span></div>
+          <div class="bg-stop"><input type="color" class="bgc" value="#fde7ee" oninput="updateBgPreview()" /><span>②</span></div>
+          <div class="bg-stop"><input type="color" class="bgc" value="#fbd5e1" oninput="updateBgPreview()" /><span>③</span></div>
+        </div>
+        <div class="angle-row">
+          <span>角度</span>
+          <input type="range" id="bgAngle" min="0" max="360" value="135" oninput="updateBgPreview()" />
+          <span id="bgAngleVal">135°</span>
+        </div>
+      </div>
+
+      <div id="bgPanePattern" style="display:none">
+        <div class="pattern-grid" id="patternGrid"></div>
+        <div style="display:flex;gap:14px;margin-top:10px;">
+          <div class="color-swatch-wrap"><input type="color" id="patBase" value="#fff5f8" oninput="updateBgPreview()" /><label>地の色</label></div>
+          <div class="color-swatch-wrap"><input type="color" id="patColor" value="#f08aa8" oninput="updateBgPreview()" /><label>柄の色</label></div>
+        </div>
+        <div class="angle-row" style="margin-top:8px;">
+          <span>大きさ</span>
+          <input type="range" id="patSize" min="16" max="96" value="36" oninput="updateBgPreview()" />
+          <span id="patSizeVal">36px</span>
+        </div>
+        <div class="angle-row" style="margin-top:4px;">
+          <span>濃さ</span>
+          <input type="range" id="patAlpha" min="10" max="100" value="45" oninput="updateBgPreview()" />
+          <span id="patAlphaVal">45%</span>
+        </div>
+      </div>
+
+      <div id="bgPaneImage" style="display:none">
+        <input type="file" id="bgImageFile" accept="image/*" style="display:none" onchange="loadBgImage(event)" />
+        <button class="btn btn-ghost" style="width:100%" onclick="document.getElementById('bgImageFile').click()">🖼 画像を選ぶ</button>
+        <div class="angle-row" style="margin-top:10px;">
+          <span>うすさ</span>
+          <input type="range" id="imgFade" min="0" max="90" value="50" oninput="updateBgPreview()" />
+          <span id="imgFadeVal">50%</span>
+        </div>
+        <div class="fd-mode-tabs" style="margin:10px 0 0;">
+          <button class="fd-mode-tab active" id="imgFitCover" onclick="setImgFit('cover')">全体に広げる</button>
+          <button class="fd-mode-tab" id="imgFitTile" onclick="setImgFit('tile')">並べて敷く</button>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">白でうすくかさねて、カレンダーを見やすくします。画像はこのブラウザの中だけに保存されます。</div>
+      </div>
+
+      <div class="bg-preview-bar" id="bgPreviewBar" style="height:64px"></div>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;justify-content:space-between;">
+        <span>文字色・枠色</span>
+        <button class="color-tab active" style="padding:3px 10px;font-size:0.72rem;" onclick="autoCalColors()">✨ 背景から自動設定</button>
+      </label>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+        <div class="color-swatch-wrap">
+          <input type="color" id="calTextColor" value="#4a3b42" oninput="previewCalColors()" />
+          <label>メイン文字</label>
+        </div>
+        <div class="color-swatch-wrap">
+          <input type="color" id="calMutedColor" value="#8a7881" oninput="previewCalColors()" />
+          <label>サブ文字</label>
+        </div>
+        <div class="color-swatch-wrap">
+          <input type="color" id="calBorderColor" value="#f3d3dd" oninput="previewCalColors()" />
+          <label>枠線</label>
+        </div>
+        <div class="color-swatch-wrap">
+          <input type="color" id="calCardBgColor" value="#ffffff" oninput="previewCalColors()" />
+          <label>カード背景</label>
+        </div>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--text-muted);">
+        <span>カード透明度</span>
+        <input type="range" id="calCardAlpha" min="0" max="100" value="82" oninput="previewCalColors()" style="flex:1;accent-color:var(--theme);" />
+        <span id="calCardAlphaVal">82%</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="applyBg()">適用</button>
+      <button class="btn btn-ghost" onclick="closeBgModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- FREE DAYS MODAL -->
+<div class="modal-overlay" id="freeDaysModal">
+  <div class="modal">
+    <h2>📋 空き日程を出力</h2>
+
+    <!-- モード切替 -->
+    <div class="fd-mode-tabs">
+      <button class="fd-mode-tab active" id="fdMode1" onclick="setFdMode('single')">この月のみ</button>
+      <button class="fd-mode-tab" id="fdMode2" onclick="setFdMode('multi')">複数月を選択</button>
+    </div>
+
+    <!-- 複数月選択（multiモード時のみ表示） -->
+    <div class="form-group" id="fdMultiMonths" style="display:none">
+      <label>対象月を選択</label>
+      <div class="month-check-grid" id="fdMonthGrid"></div>
+    </div>
+
+    <!-- 除外曜日 -->
+    <div class="form-group">
+      <label>除外する曜日（クリックで除外）</label>
+      <div class="dow-toggle-row" id="fdDowRow">
+        <button class="dow-toggle" data-dw="0" onclick="toggleDow(this)">月</button>
+        <button class="dow-toggle" data-dw="1" onclick="toggleDow(this)">火</button>
+        <button class="dow-toggle" data-dw="2" onclick="toggleDow(this)">水</button>
+        <button class="dow-toggle" data-dw="3" onclick="toggleDow(this)">木</button>
+        <button class="dow-toggle" data-dw="4" onclick="toggleDow(this)">金</button>
+        <button class="dow-toggle sat" data-dw="5" onclick="toggleDow(this)">土</button>
+        <button class="dow-toggle sun" data-dw="6" onclick="toggleDow(this)">日</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;cursor:pointer;margin-top:2px;">
+        <input type="checkbox" id="fdExclHoliday" style="accent-color:var(--theme);" />
+        <span>祝日も除外する</span>
+      </label>
+    </div>
+
+    <!-- 除外日カレンダー -->
+    <div class="form-group">
+      <label>除外する日付（カレンダーでタップ）</label>
+      <div class="excl-tags" id="exclTags"><span style="font-size:0.72rem;color:var(--text-muted)">なし</span></div>
+      <div class="excl-cal-wrap">
+        <div class="excl-cal-header">
+          <button class="excl-cal-nav" onclick="exclCalPrev()">‹</button>
+          <span id="exclCalTitle"></span>
+          <button class="excl-cal-nav" onclick="exclCalNext()">›</button>
+        </div>
+        <div class="excl-mini-cal" id="exclMiniCal"></div>
+      </div>
+    </div>
+
+    <!-- 出力 -->
+    <div class="form-group">
+      <label>出力結果</label>
+      <textarea class="free-output" id="freeDaysOutput" readonly placeholder="上の設定を確認して「生成」を押してください"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-primary" onclick="generateFreeDays()">✨ 生成する</button>
+        <button class="btn btn-ghost" onclick="copyFreeDays()">📋 コピー</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>外部サービスで日程調整</label>
+      <div class="external-links">
+        <a class="ext-btn" href="https://chouseisan.com/" target="_blank" rel="noopener">🗓 調整さん</a>
+        <a class="ext-btn" href="https://densuke.biz/" target="_blank" rel="noopener">🐕 伝助</a>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeFreeDaysModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<footer id="siteFooter">
+  <a href="https://utiyoso.github.io/" target="_blank" rel="noopener">🔧 他のツール一覧</a>
+  <p>© うちよそ研究所</p>
+</footer>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

@@ -41,7 +41,9 @@
   <div id="bgMonthPreview" style="min-height:calc(100vh - 57px); padding: 20px 24px;">
     <div id="monthViewHeader">
       <button class="topbar-btn" onclick="backToYear()">← 年間表示</button>
+      <button class="year-nav-btn" data-html2canvas-ignore="true" onclick="changeMonth(-1)" aria-label="前の月">←</button>
       <div id="monthViewTitle"></div>
+      <button class="year-nav-btn" data-html2canvas-ignore="true" onclick="changeMonth(1)" aria-label="次の月">→</button>
       <button class="topbar-btn" onclick="takeMonthScreenshot()">📷 この月をスクショ</button>
       <button class="topbar-btn" onclick="showFreeDaysModal()">📋 空き日程を出力</button>
     </div>

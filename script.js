@@ -579,6 +579,12 @@ function changeYear(delta) {
   viewYear += delta;
   renderYearView();
 }
+function changeMonth(delta) {
+  var m = currentMonth + delta;
+  if(m < 0)  { m = 11; viewYear--; }
+  if(m > 11) { m = 0;  viewYear++; }
+  openMonth(m);
+}
 function openMonth(m) {
   currentMonth = m;
   document.getElementById('yearView').style.display  = 'none';

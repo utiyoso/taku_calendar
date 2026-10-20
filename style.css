@@ -134,7 +134,7 @@ body {
 #monthView { display: none; }
 #bgMonthPreview { max-width: 100%; }
 #monthViewHeader { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
-#monthViewTitle { font-family: "Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif; font-weight: 700; font-size: 1.6rem; flex: 1; }
+#monthViewTitle { font-family: "Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif; font-weight: 700; font-size: 1.6rem; flex: 0 0 auto; min-width: 7em; text-align: center; }
 
 /* FREE DAYS MODAL */
 #freeDaysModal .modal { max-width: 560px; }
@@ -365,3 +365,4 @@ body {
 .cp-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cp-item button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
 .cp-item button:hover { color: #c44; }
+#monthViewTitle + .year-nav-btn { margin-right: auto; }
